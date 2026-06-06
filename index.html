@@ -82,7 +82,16 @@
             to   { transform: translateY(0);     opacity: 1; }
         }
 
-        #controls h1 {
+        .panel-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .panel-header-text h1 {
             font-size: 1.15rem;
             font-weight: 700;
             margin-bottom: 4px;
@@ -93,11 +102,44 @@
             letter-spacing: -0.02em;
         }
 
-        #controls .subtitle {
+        .panel-header-text .subtitle {
             font-size: 0.75rem;
             color: var(--text-muted);
-            margin-bottom: 20px;
             font-weight: 400;
+        }
+
+        .collapse-btn {
+            background: none;
+            border: 1px solid var(--border-glass);
+            border-radius: 8px;
+            color: var(--text-muted);
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 0.75rem;
+            flex-shrink: 0;
+            transition: all var(--transition);
+            margin-top: 2px;
+        }
+
+        .collapse-btn:hover {
+            color: var(--text-primary);
+            border-color: var(--accent);
+        }
+
+        #panel-body {
+            overflow: hidden;
+            transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+            max-height: 600px;
+            opacity: 1;
+        }
+
+        #panel-body.collapsed {
+            max-height: 0;
+            opacity: 0;
         }
 
         .field-group {
@@ -355,41 +397,48 @@
 
     <!-- Control Panel -->
     <div id="controls">
-        <h1>📍 Geolocator</h1>
-        <p class="subtitle">Track Viewer</p>
-
-        <div class="field-group">
-            <label for="startTime">Start Time</label>
-            <input type="datetime-local" id="startTime" />
-        </div>
-
-        <div class="field-group">
-            <label for="endTime">End Time</label>
-            <input type="datetime-local" id="endTime" />
-        </div>
-
-        <div class="btn-row">
-            <button class="btn btn-primary" id="btnLoad" onclick="loadTrack()">Load Track</button>
-            <button class="btn btn-secondary" id="btnPast3h" onclick="loadPast3Hours()">Past 3h</button>
-            <button class="btn btn-secondary" id="btnMapTheme" onclick="toggleMapTheme()">☀ Light Map</button>
-        </div>
-
-        <div id="status">
-            <span id="statusText">Ready. Select a time range to begin.</span>
-        </div>
-
-        <div class="stats-row" id="statsRow">
-            <div class="stat-card">
-                <div class="stat-value" id="statPoints">—</div>
-                <div class="stat-label">Points</div>
+        <div class="panel-header" onclick="togglePanel()">
+            <div class="panel-header-text">
+                <h1>📍 Geolocator</h1>
+                <p class="subtitle">Track Viewer</p>
             </div>
-            <div class="stat-card">
-                <div class="stat-value" id="statDuration">—</div>
-                <div class="stat-label">Duration</div>
+            <button class="collapse-btn" id="collapseBtn" title="Collapse panel">▲</button>
+        </div>
+
+        <div id="panel-body">
+            <div class="field-group">
+                <label for="startTime">Start Time</label>
+                <input type="datetime-local" id="startTime" />
             </div>
-            <div class="stat-card">
-                <div class="stat-value" id="statMaxSpeed">—</div>
-                <div class="stat-label">Max km/h</div>
+
+            <div class="field-group">
+                <label for="endTime">End Time</label>
+                <input type="datetime-local" id="endTime" />
+            </div>
+
+            <div class="btn-row">
+                <button class="btn btn-primary" id="btnLoad" onclick="loadTrack()">Load Track</button>
+                <button class="btn btn-secondary" id="btnPast3h" onclick="loadPast3Hours()">Past 3h</button>
+                <button class="btn btn-secondary" id="btnMapTheme" onclick="toggleMapTheme()">☀ Light</button>
+            </div>
+
+            <div id="status">
+                <span id="statusText">Ready. Select a time range to begin.</span>
+            </div>
+
+            <div class="stats-row" id="statsRow">
+                <div class="stat-card">
+                    <div class="stat-value" id="statPoints">—</div>
+                    <div class="stat-label">Points</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="statDuration">—</div>
+                    <div class="stat-label">Duration</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="statMaxSpeed">—</div>
+                    <div class="stat-label">Max km/h</div>
+                </div>
             </div>
         </div>
     </div>
@@ -424,34 +473,40 @@
         });
 
         const tileLayers = {
-            dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
-                subdomains: 'abcd',
-                maxZoom: 20,
+            osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                maxZoom: 19,
             }),
             light: L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
                 subdomains: 'abcd',
                 maxZoom: 20,
             }),
+            dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
+                subdomains: 'abcd',
+                maxZoom: 20,
+            }),
         };
 
-        let currentTheme = 'dark';
-        tileLayers.dark.addTo(map);
+        const themeOrder = ['osm', 'light', 'dark'];
+        const themeLabels = { osm: '☀ Light', light: '☾ Dark', dark: '🗺 OSM' };
+        let currentTheme = 'osm';
+        tileLayers.osm.addTo(map);
 
         function toggleMapTheme() {
-            const btn = document.getElementById('btnMapTheme');
-            if (currentTheme === 'dark') {
-                map.removeLayer(tileLayers.dark);
-                tileLayers.light.addTo(map);
-                currentTheme = 'light';
-                btn.textContent = '☾ Dark Map';
-            } else {
-                map.removeLayer(tileLayers.light);
-                tileLayers.dark.addTo(map);
-                currentTheme = 'dark';
-                btn.textContent = '☀ Light Map';
-            }
+            const nextTheme = themeOrder[(themeOrder.indexOf(currentTheme) + 1) % themeOrder.length];
+            map.removeLayer(tileLayers[currentTheme]);
+            tileLayers[nextTheme].addTo(map);
+            currentTheme = nextTheme;
+            document.getElementById('btnMapTheme').textContent = themeLabels[nextTheme];
+        }
+
+        function togglePanel() {
+            const body = document.getElementById('panel-body');
+            const btn  = document.getElementById('collapseBtn');
+            const collapsed = body.classList.toggle('collapsed');
+            btn.textContent = collapsed ? '▼' : '▲';
         }
 
         // Track layers
@@ -551,7 +606,7 @@
 
                 // Draw polyline with gradient-like styling
                 trackPolyline = L.polyline(coords, {
-                    color: '#6c5ce7',
+                    color: '#ff7f00',
                     weight: 4,
                     opacity: 0.9,
                     smoothFactor: 1.5,
@@ -569,16 +624,16 @@
                     html: `
                         <div style="
                             width: 18px; height: 18px;
-                            background: #6c5ce7;
-                            border: 3px solid #a29bfe;
+                            background: #ff7f00;
+                            border: 3px solid #ffb347;
                             border-radius: 50%;
-                            box-shadow: 0 0 12px rgba(108,92,231,0.6), 0 0 24px rgba(108,92,231,0.3);
+                            box-shadow: 0 0 12px rgba(255,127,0,0.6), 0 0 24px rgba(255,127,0,0.3);
                             animation: pulse 2s ease-in-out infinite;
                         "></div>
                         <style>
                             @keyframes pulse {
-                                0%, 100% { box-shadow: 0 0 12px rgba(108,92,231,0.6); transform: scale(1); }
-                                50% { box-shadow: 0 0 24px rgba(108,92,231,0.8); transform: scale(1.15); }
+                                0%, 100% { box-shadow: 0 0 12px rgba(255,127,0,0.6); transform: scale(1); }
+                                50% { box-shadow: 0 0 24px rgba(255,127,0,0.8); transform: scale(1.15); }
                             }
                         </style>
                     `,
