@@ -284,6 +284,105 @@
             to { transform: rotate(360deg); }
         }
 
+        /* ── Mode Tabs ── */
+        .mode-tabs {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 16px;
+        }
+
+        .mode-tab {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius-sm);
+            background: rgba(255,255,255,0.04);
+            color: var(--text-secondary);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.78rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition);
+        }
+
+        .mode-tab.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: white;
+        }
+
+        /* ── Hours Grid ── */
+        .hours-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+        }
+
+        .hours-btn {
+            padding: 8px 4px;
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius-sm);
+            background: rgba(255,255,255,0.04);
+            color: var(--text-secondary);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition);
+            text-align: center;
+        }
+
+        .hours-btn.active {
+            background: rgba(255,127,0,0.2);
+            border-color: #ff7f00;
+            color: #ffb347;
+        }
+
+        .hours-btn:hover:not(.active) {
+            background: rgba(255,255,255,0.08);
+            color: var(--text-primary);
+        }
+
+        /* ── Live indicator ── */
+        .btn-live {
+            flex: 1;
+            padding: 11px 16px;
+            border: 1px solid #ff7f00;
+            border-radius: var(--radius-sm);
+            background: rgba(255,127,0,0.15);
+            color: #ffb347;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition);
+        }
+
+        .btn-live.active {
+            background: #ff7f00;
+            color: white;
+        }
+
+        .btn-live:hover {
+            background: rgba(255,127,0,0.3);
+        }
+
+        .btn-live.active:hover {
+            background: #e06e00;
+        }
+
+        #liveCountdown {
+            margin-top: 10px;
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            text-align: center;
+        }
+
+        #liveCountdown span {
+            color: #ffb347;
+            font-weight: 600;
+        }
+
         /* ── Stats Row ── */
         .stats-row {
             display: none;
@@ -406,22 +505,50 @@
         </div>
 
         <div id="panel-body">
-            <div class="field-group">
-                <label for="startTime">Start Time</label>
-                <input type="datetime-local" id="startTime" />
+
+            <!-- Mode tabs -->
+            <div class="mode-tabs">
+                <button class="mode-tab active" id="tabHistoric" onclick="setMode('historic')">Historic</button>
+                <button class="mode-tab" id="tabLive" onclick="setMode('live')">● Live</button>
             </div>
 
-            <div class="field-group">
-                <label for="endTime">End Time</label>
-                <input type="datetime-local" id="endTime" />
+            <!-- Historic mode -->
+            <div id="modeHistoric">
+                <div class="field-group">
+                    <label for="startTime">Start Time</label>
+                    <input type="datetime-local" id="startTime" />
+                </div>
+                <div class="field-group">
+                    <label for="endTime">End Time</label>
+                    <input type="datetime-local" id="endTime" />
+                </div>
+                <div class="btn-row">
+                    <button class="btn btn-primary" onclick="loadTrack()">Load Track</button>
+                    <button class="btn btn-secondary" id="btnMapTheme" onclick="toggleMapTheme()">☀ Light</button>
+                </div>
             </div>
 
-            <div class="btn-row">
-                <button class="btn btn-primary" id="btnLoad" onclick="loadTrack()">Load Track</button>
-                <button class="btn btn-secondary" id="btnPast3h" onclick="loadPast3Hours()">Past 3h</button>
-                <button class="btn btn-secondary" id="btnMapTheme" onclick="toggleMapTheme()">☀ Light</button>
+            <!-- Live mode -->
+            <div id="modeLive" style="display:none">
+                <div class="field-group">
+                    <label>Past Hours</label>
+                    <div class="hours-grid">
+                        <button class="hours-btn active" data-h="3"  onclick="selectHours(3)">3h</button>
+                        <button class="hours-btn"        data-h="6"  onclick="selectHours(6)">6h</button>
+                        <button class="hours-btn"        data-h="9"  onclick="selectHours(9)">9h</button>
+                        <button class="hours-btn"        data-h="12" onclick="selectHours(12)">12h</button>
+                        <button class="hours-btn"        data-h="18" onclick="selectHours(18)">18h</button>
+                        <button class="hours-btn"        data-h="24" onclick="selectHours(24)">24h</button>
+                    </div>
+                </div>
+                <div class="btn-row">
+                    <button class="btn-live" id="btnLive" onclick="toggleLive()">▶ Start Live</button>
+                    <button class="btn btn-secondary" id="btnMapThemeLive" onclick="toggleMapTheme()">☀ Light</button>
+                </div>
+                <div id="liveCountdown" style="display:none">Next refresh in <span id="countdownSec">120</span>s</div>
             </div>
 
+            <!-- Shared status + stats -->
             <div id="status">
                 <span id="statusText">Ready. Select a time range to begin.</span>
             </div>
@@ -452,25 +579,12 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
     <script>
-        // ──────────────────────────────────────────────
-        // CONFIGURATION — Replace with your Supabase credentials
-        // ──────────────────────────────────────────────
-        const SUPABASE_URL  = 'https://blypabobecdeferzjakh.supabase.co';
-        const SUPABASE_KEY  = 'sb_publishable_GiRg7KAg0dZEudYoPTA8Lg__CgiH7lC';
-
-        // ──────────────────────────────────────────────
-        // Initialize Supabase client
-        // ──────────────────────────────────────────────
+        const SUPABASE_URL = 'https://blypabobecdeferzjakh.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_GiRg7KAg0dZEudYoPTA8Lg__CgiH7lC';
         const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // ──────────────────────────────────────────────
-        // Initialize Leaflet map (dark tile layer)
-        // ──────────────────────────────────────────────
-        const map = L.map('map', {
-            center: [0, 0],
-            zoom: 3,
-            zoomControl: true,
-        });
+        // ── Map setup ──
+        const map = L.map('map', { center: [0, 0], zoom: 3, zoomControl: true });
 
         const tileLayers = {
             osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -479,111 +593,81 @@
             }),
             light: L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
-                subdomains: 'abcd',
-                maxZoom: 20,
+                subdomains: 'abcd', maxZoom: 20,
             }),
             dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
-                subdomains: 'abcd',
-                maxZoom: 20,
+                subdomains: 'abcd', maxZoom: 20,
             }),
         };
 
-        const themeOrder = ['osm', 'light', 'dark'];
+        const themeOrder  = ['osm', 'light', 'dark'];
         const themeLabels = { osm: '☀ Light', light: '☾ Dark', dark: '🗺 OSM' };
-        let currentTheme = 'osm';
+        let currentTheme  = 'osm';
         tileLayers.osm.addTo(map);
 
         function toggleMapTheme() {
-            const nextTheme = themeOrder[(themeOrder.indexOf(currentTheme) + 1) % themeOrder.length];
+            const next = themeOrder[(themeOrder.indexOf(currentTheme) + 1) % themeOrder.length];
             map.removeLayer(tileLayers[currentTheme]);
-            tileLayers[nextTheme].addTo(map);
-            currentTheme = nextTheme;
-            document.getElementById('btnMapTheme').textContent = themeLabels[nextTheme];
+            tileLayers[next].addTo(map);
+            currentTheme = next;
+            document.getElementById('btnMapTheme').textContent     = themeLabels[next];
+            document.getElementById('btnMapThemeLive').textContent = themeLabels[next];
         }
 
         function togglePanel() {
-            const body = document.getElementById('panel-body');
-            const btn  = document.getElementById('collapseBtn');
+            const body      = document.getElementById('panel-body');
+            const btn       = document.getElementById('collapseBtn');
             const collapsed = body.classList.toggle('collapsed');
             btn.textContent = collapsed ? '▼' : '▲';
         }
 
-        // Track layers
+        // ── Track layers ──
         let trackPolyline = null;
         let lastMarker    = null;
 
-        // ──────────────────────────────────────────────
-        // Set default time inputs (past 3 hours → now)
-        // ──────────────────────────────────────────────
+        // ── Default historic time inputs ──
         function toLocalISO(date) {
-            const offset = date.getTimezoneOffset();
-            const local  = new Date(date.getTime() - offset * 60000);
+            const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
             return local.toISOString().slice(0, 16);
         }
 
-        const now      = new Date();
-        const past3h   = new Date(now.getTime() - 3 * 60 * 60 * 1000);
-        document.getElementById('endTime').value   = toLocalISO(now);
-        document.getElementById('startTime').value = toLocalISO(past3h);
+        const _now  = new Date();
+        const _past = new Date(_now.getTime() - 3 * 60 * 60 * 1000);
+        document.getElementById('endTime').value   = toLocalISO(_now);
+        document.getElementById('startTime').value = toLocalISO(_past);
 
-        // ──────────────────────────────────────────────
-        // Status helpers
-        // ──────────────────────────────────────────────
+        // ── Status helpers ──
         const statusEl   = document.getElementById('status');
         const statusText = document.getElementById('statusText');
 
         function setStatus(msg, type = '') {
             statusEl.className = type;
             statusText.textContent = msg;
-
-            // Remove spinner if not loading
-            const existingSpinner = statusEl.querySelector('.spinner');
-            if (existingSpinner) existingSpinner.remove();
-
+            const existing = statusEl.querySelector('.spinner');
+            if (existing) existing.remove();
             if (type === 'loading') {
-                const spinner = document.createElement('div');
-                spinner.className = 'spinner';
-                statusEl.prepend(spinner);
+                const s = document.createElement('div');
+                s.className = 'spinner';
+                statusEl.prepend(s);
             }
         }
 
-        // ──────────────────────────────────────────────
-        // Clear existing track from map
-        // ──────────────────────────────────────────────
         function clearTrack() {
             if (trackPolyline) { map.removeLayer(trackPolyline); trackPolyline = null; }
             if (lastMarker)    { map.removeLayer(lastMarker);    lastMarker    = null; }
             document.getElementById('statsRow').classList.remove('visible');
         }
 
-        // ──────────────────────────────────────────────
-        // Format duration
-        // ──────────────────────────────────────────────
         function formatDuration(ms) {
-            const totalSec = Math.floor(ms / 1000);
-            const h = Math.floor(totalSec / 3600);
-            const m = Math.floor((totalSec % 3600) / 60);
-            if (h > 0) return `${h}h ${m}m`;
-            return `${m}m`;
+            const h = Math.floor(ms / 3600000);
+            const m = Math.floor((ms % 3600000) / 60000);
+            return h > 0 ? `${h}h ${m}m` : `${m}m`;
         }
 
-        // ──────────────────────────────────────────────
-        // Load track from Supabase
-        // ──────────────────────────────────────────────
-        async function loadTrack() {
-            const startInput = document.getElementById('startTime').value;
-            const endInput   = document.getElementById('endTime').value;
-
-            if (!startInput || !endInput) {
-                setStatus('Please select both start and end times.', 'error');
-                return;
-            }
-
-            const startISO = new Date(startInput).toISOString();
-            const endISO   = new Date(endInput).toISOString();
-
-            clearTrack();
+        // ── Core fetch + render (shared by both modes) ──
+        async function loadTrackDirect(startISO, endISO, preserveView = false) {
+            if (!preserveView) clearTrack();
             setStatus('Fetching location data…', 'loading');
 
             try {
@@ -601,85 +685,53 @@
                     return;
                 }
 
-                // Build coordinate array
+                if (preserveView) clearTrack();
+
                 const coords = data.map(p => [p.latitude, p.longitude]);
 
-                // Draw polyline with gradient-like styling
                 trackPolyline = L.polyline(coords, {
-                    color: '#ff7f00',
-                    weight: 4,
-                    opacity: 0.9,
-                    smoothFactor: 1.5,
-                    lineCap: 'round',
-                    lineJoin: 'round',
+                    color: '#ff7f00', weight: 4, opacity: 0.9,
+                    smoothFactor: 1.5, lineCap: 'round', lineJoin: 'round',
                 }).addTo(map);
 
-                // Place marker at last position
                 const lastPoint = data[data.length - 1];
                 const lastCoord = [lastPoint.latitude, lastPoint.longitude];
+                const lastTime  = new Date(lastPoint.recorded_at);
 
-                // Custom pulsing marker icon
                 const pulseIcon = L.divIcon({
                     className: '',
                     html: `
-                        <div style="
-                            width: 18px; height: 18px;
-                            background: #ff7f00;
-                            border: 3px solid #ffb347;
-                            border-radius: 50%;
-                            box-shadow: 0 0 12px rgba(255,127,0,0.6), 0 0 24px rgba(255,127,0,0.3);
-                            animation: pulse 2s ease-in-out infinite;
-                        "></div>
-                        <style>
-                            @keyframes pulse {
-                                0%, 100% { box-shadow: 0 0 12px rgba(255,127,0,0.6); transform: scale(1); }
-                                50% { box-shadow: 0 0 24px rgba(255,127,0,0.8); transform: scale(1.15); }
-                            }
-                        </style>
-                    `,
-                    iconSize: [18, 18],
-                    iconAnchor: [9, 9],
+                        <div style="width:18px;height:18px;background:#ff7f00;border:3px solid #ffb347;
+                            border-radius:50%;box-shadow:0 0 12px rgba(255,127,0,0.6),0 0 24px rgba(255,127,0,0.3);
+                            animation:pulse 2s ease-in-out infinite;"></div>
+                        <style>@keyframes pulse{
+                            0%,100%{box-shadow:0 0 12px rgba(255,127,0,0.6);transform:scale(1)}
+                            50%{box-shadow:0 0 24px rgba(255,127,0,0.8);transform:scale(1.15)}
+                        }</style>`,
+                    iconSize: [18, 18], iconAnchor: [9, 9],
                 });
-
-                const lastTime = new Date(lastPoint.recorded_at);
-                const popupContent = `
-                    <div class="popup-title">Last Known Position</div>
-                    <div class="popup-row">
-                        <span class="popup-label">Lat</span>
-                        <span class="popup-value">${lastPoint.latitude.toFixed(6)}</span>
-                    </div>
-                    <div class="popup-row">
-                        <span class="popup-label">Lon</span>
-                        <span class="popup-value">${lastPoint.longitude.toFixed(6)}</span>
-                    </div>
-                    <div class="popup-row">
-                        <span class="popup-label">Speed</span>
-                        <span class="popup-value">${lastPoint.speed_kmh.toFixed(1)} km/h</span>
-                    </div>
-                    <div class="popup-row">
-                        <span class="popup-label">Time</span>
-                        <span class="popup-value">${lastTime.toLocaleTimeString()}</span>
-                    </div>
-                `;
 
                 lastMarker = L.marker(lastCoord, { icon: pulseIcon })
                     .addTo(map)
-                    .bindPopup(popupContent, { maxWidth: 220 });
+                    .bindPopup(`
+                        <div class="popup-title">Last Known Position</div>
+                        <div class="popup-row"><span class="popup-label">Lat</span><span class="popup-value">${lastPoint.latitude.toFixed(6)}</span></div>
+                        <div class="popup-row"><span class="popup-label">Lon</span><span class="popup-value">${lastPoint.longitude.toFixed(6)}</span></div>
+                        <div class="popup-row"><span class="popup-label">Speed</span><span class="popup-value">${lastPoint.speed_kmh.toFixed(1)} km/h</span></div>
+                        <div class="popup-row"><span class="popup-label">Time</span><span class="popup-value">${lastTime.toLocaleTimeString()}</span></div>
+                    `, { maxWidth: 220 });
 
-                // Fit map to track bounds
-                map.fitBounds(trackPolyline.getBounds().pad(0.15));
+                if (!preserveView) map.fitBounds(trackPolyline.getBounds().pad(0.15));
 
-                // Compute stats
-                const maxSpeed = Math.max(...data.map(p => p.speed_kmh));
+                const maxSpeed  = Math.max(...data.map(p => p.speed_kmh));
                 const firstTime = new Date(data[0].recorded_at);
-                const duration  = lastTime - firstTime;
 
-                document.getElementById('statPoints').textContent   = data.length;
-                document.getElementById('statDuration').textContent  = formatDuration(duration);
-                document.getElementById('statMaxSpeed').textContent  = maxSpeed.toFixed(1);
+                document.getElementById('statPoints').textContent  = data.length;
+                document.getElementById('statDuration').textContent = formatDuration(lastTime - firstTime);
+                document.getElementById('statMaxSpeed').textContent = maxSpeed.toFixed(1);
                 document.getElementById('statsRow').classList.add('visible');
 
-                setStatus(`Loaded ${data.length} points.`, 'success');
+                setStatus(`${data.length} points — last at ${lastTime.toLocaleTimeString()}`, 'success');
 
             } catch (err) {
                 console.error('Error loading track:', err);
@@ -687,15 +739,82 @@
             }
         }
 
-        // ──────────────────────────────────────────────
-        // Quick filter: Past 3 Hours
-        // ──────────────────────────────────────────────
-        function loadPast3Hours() {
-            const now    = new Date();
-            const past3h = new Date(now.getTime() - 3 * 60 * 60 * 1000);
-            document.getElementById('startTime').value = toLocalISO(past3h);
-            document.getElementById('endTime').value   = toLocalISO(now);
-            loadTrack();
+        // ── Historic mode ──
+        function loadTrack() {
+            const s = document.getElementById('startTime').value;
+            const e = document.getElementById('endTime').value;
+            if (!s || !e) { setStatus('Please select both start and end times.', 'error'); return; }
+            loadTrackDirect(new Date(s).toISOString(), new Date(e).toISOString(), false);
+        }
+
+        // ── Mode switching ──
+        function setMode(mode) {
+            document.getElementById('modeHistoric').style.display = mode === 'historic' ? '' : 'none';
+            document.getElementById('modeLive').style.display     = mode === 'live'     ? '' : 'none';
+            document.getElementById('tabHistoric').classList.toggle('active', mode === 'historic');
+            document.getElementById('tabLive').classList.toggle('active', mode === 'live');
+            if (mode === 'historic') stopLive();
+        }
+
+        // ── Live mode ──
+        let liveHours       = 3;
+        let liveTimer       = null;
+        let countdownTimer  = null;
+        let countdownValue  = 120;
+        let isLiveActive    = false;
+        let firstLiveLoad   = true;
+
+        function selectHours(h) {
+            liveHours = h;
+            document.querySelectorAll('.hours-btn').forEach(b =>
+                b.classList.toggle('active', +b.dataset.h === h)
+            );
+            if (isLiveActive) { refreshLive(); resetCountdown(); }
+        }
+
+        function toggleLive() {
+            isLiveActive ? stopLive() : startLive();
+        }
+
+        function startLive() {
+            isLiveActive  = true;
+            firstLiveLoad = true;
+            const btn = document.getElementById('btnLive');
+            btn.textContent = '⏹ Stop Live';
+            btn.classList.add('active');
+            document.getElementById('liveCountdown').style.display = '';
+            refreshLive();
+            resetCountdown();
+            liveTimer = setInterval(() => { refreshLive(); resetCountdown(); }, 120000);
+        }
+
+        function stopLive() {
+            isLiveActive = false;
+            clearInterval(liveTimer);
+            clearInterval(countdownTimer);
+            liveTimer = null;
+            const btn = document.getElementById('btnLive');
+            btn.textContent = '▶ Start Live';
+            btn.classList.remove('active');
+            document.getElementById('liveCountdown').style.display = 'none';
+        }
+
+        function resetCountdown() {
+            clearInterval(countdownTimer);
+            countdownValue = 120;
+            document.getElementById('countdownSec').textContent = countdownValue;
+            countdownTimer = setInterval(() => {
+                countdownValue--;
+                document.getElementById('countdownSec').textContent = countdownValue;
+                if (countdownValue <= 0) clearInterval(countdownTimer);
+            }, 1000);
+        }
+
+        function refreshLive() {
+            const end   = new Date();
+            const start = new Date(end.getTime() - liveHours * 3600000);
+            loadTrackDirect(start.toISOString(), end.toISOString(), !firstLiveLoad);
+            firstLiveLoad = false;
         }
     </script>
 
