@@ -508,12 +508,12 @@
 
             <!-- Mode tabs -->
             <div class="mode-tabs">
-                <button class="mode-tab active" id="tabHistoric" onclick="setMode('historic')">Historic</button>
-                <button class="mode-tab" id="tabLive" onclick="setMode('live')">● Live</button>
+                <button class="mode-tab" id="tabHistoric" onclick="setMode('historic')">Historic</button>
+                <button class="mode-tab active" id="tabLive" onclick="setMode('live')">● Live</button>
             </div>
 
             <!-- Historic mode -->
-            <div id="modeHistoric">
+            <div id="modeHistoric" style="display:none">
                 <div class="field-group">
                     <label for="startTime">Start Time</label>
                     <input type="datetime-local" id="startTime" />
@@ -529,7 +529,7 @@
             </div>
 
             <!-- Live mode -->
-            <div id="modeLive" style="display:none">
+            <div id="modeLive">
                 <div class="field-group">
                     <label>Past Hours</label>
                     <div class="hours-grid">
