@@ -623,8 +623,10 @@
         }
 
         // ── Track layers ──
-        let trackPolyline = null;
-        let lastMarker    = null;
+        const pointCanvasRenderer = L.canvas({ padding: 0.5 });
+        let trackPolyline     = null;
+        let lastMarker        = null;
+        let pointMarkersLayer = null;
 
         // ── Default historic time inputs ──
         function toLocalISO(date) {
@@ -654,8 +656,9 @@
         }
 
         function clearTrack() {
-            if (trackPolyline) { map.removeLayer(trackPolyline); trackPolyline = null; }
-            if (lastMarker)    { map.removeLayer(lastMarker);    lastMarker    = null; }
+            if (trackPolyline)     { map.removeLayer(trackPolyline);     trackPolyline     = null; }
+            if (lastMarker)        { map.removeLayer(lastMarker);        lastMarker        = null; }
+            if (pointMarkersLayer) { map.removeLayer(pointMarkersLayer); pointMarkersLayer = null; }
             document.getElementById('statsRow').classList.remove('visible');
         }
 
@@ -693,6 +696,36 @@
                     color: '#ff7f00', weight: 4, opacity: 0.9,
                     smoothFactor: 1.5, lineCap: 'round', lineJoin: 'round',
                 }).addTo(map);
+
+                pointMarkersLayer = L.layerGroup(data.flatMap(p => {
+                    const t = new Date(p.recorded_at);
+
+                    // Larger invisible circle just for click/tap hit-testing —
+                    // the 5px visual dot alone is too small to reliably click.
+                    const hitTarget = L.circleMarker([p.latitude, p.longitude], {
+                        renderer: pointCanvasRenderer,
+                        radius: 12,
+                        stroke: false,
+                        fillOpacity: 0,
+                    }).bindPopup(`
+                        <div class="popup-title">${t.toLocaleTimeString()}</div>
+                        <div class="popup-row"><span class="popup-label">Lat</span><span class="popup-value">${p.latitude.toFixed(6)}</span></div>
+                        <div class="popup-row"><span class="popup-label">Lon</span><span class="popup-value">${p.longitude.toFixed(6)}</span></div>
+                        <div class="popup-row"><span class="popup-label">Speed</span><span class="popup-value">${p.speed_kmh.toFixed(1)} km/h</span></div>
+                    `, { maxWidth: 200 });
+
+                    const dot = L.circleMarker([p.latitude, p.longitude], {
+                        renderer: pointCanvasRenderer,
+                        radius: 5,
+                        color: '#ffd8a8',
+                        weight: 1,
+                        fillColor: '#ff7f00',
+                        fillOpacity: 0.75,
+                        interactive: false,
+                    });
+
+                    return [hitTarget, dot];
+                })).addTo(map);
 
                 const lastPoint = data[data.length - 1];
                 const lastCoord = [lastPoint.latitude, lastPoint.longitude];
