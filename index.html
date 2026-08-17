@@ -36,6 +36,16 @@
             --text-secondary: rgba(240, 240, 245, 0.6);
             --text-muted: rgba(240, 240, 245, 0.35);
             --danger: #ff6b6b;
+            /* ── Track palette ──
+               Turquoise is the complement of OSM's warm street palette
+               (yellow/orange/pink roads) and far more saturated than its pale
+               water blue, so the path never blends into either. The dark
+               casing drawn under the line carries the contrast on the light
+               basemaps, where a bright hue alone would wash out. */
+            --track: #00d1c1;
+            --track-rgb: 0, 209, 193;
+            --track-light: #7ff5e8;
+            --track-dark: #00a99c;
             --radius: 16px;
             --radius-sm: 10px;
             --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -333,9 +343,9 @@
         }
 
         .hours-btn.active {
-            background: rgba(255,127,0,0.2);
-            border-color: #ff7f00;
-            color: #ffb347;
+            background: rgba(var(--track-rgb), 0.2);
+            border-color: var(--track);
+            color: var(--track-light);
         }
 
         .hours-btn:hover:not(.active) {
@@ -347,10 +357,10 @@
         .btn-live {
             flex: 1;
             padding: 11px 16px;
-            border: 1px solid #ff7f00;
+            border: 1px solid var(--track);
             border-radius: var(--radius-sm);
-            background: rgba(255,127,0,0.15);
-            color: #ffb347;
+            background: rgba(var(--track-rgb), 0.15);
+            color: var(--track-light);
             font-family: 'Inter', sans-serif;
             font-size: 0.8rem;
             font-weight: 600;
@@ -359,16 +369,16 @@
         }
 
         .btn-live.active {
-            background: #ff7f00;
-            color: white;
+            background: var(--track);
+            color: #042a28;
         }
 
         .btn-live:hover {
-            background: rgba(255,127,0,0.3);
+            background: rgba(var(--track-rgb), 0.3);
         }
 
         .btn-live.active:hover {
-            background: #e06e00;
+            background: var(--track-dark);
         }
 
         #liveCountdown {
@@ -379,7 +389,7 @@
         }
 
         #liveCountdown span {
-            color: #ffb347;
+            color: var(--track-light);
             font-weight: 600;
         }
 
@@ -622,8 +632,15 @@
             btn.textContent = collapsed ? '▼' : '▲';
         }
 
+        // ── Track palette (mirrors --track* in the CSS above) ──
+        const TRACK        = '#00d1c1';
+        const TRACK_LIGHT  = '#7ff5e8';
+        const TRACK_CASING = '#052e2c';
+        const TRACK_EDGE   = 'rgba(5, 46, 44, 0.85)';
+
         // ── Track layers ──
         const pointCanvasRenderer = L.canvas({ padding: 0.5 });
+        let trackCasing       = null;
         let trackPolyline     = null;
         let lastMarker        = null;
         let pointMarkersLayer = null;
@@ -656,6 +673,7 @@
         }
 
         function clearTrack() {
+            if (trackCasing)       { map.removeLayer(trackCasing);       trackCasing       = null; }
             if (trackPolyline)     { map.removeLayer(trackPolyline);     trackPolyline     = null; }
             if (lastMarker)        { map.removeLayer(lastMarker);        lastMarker        = null; }
             if (pointMarkersLayer) { map.removeLayer(pointMarkersLayer); pointMarkersLayer = null; }
@@ -692,9 +710,21 @@
 
                 const coords = data.map(p => [p.latitude, p.longitude]);
 
-                trackPolyline = L.polyline(coords, {
-                    color: '#ff7f00', weight: 4, opacity: 0.9,
+                const trackStyle = {
                     smoothFactor: 1.5, lineCap: 'round', lineJoin: 'round',
+                };
+
+                // Dark casing under the line: keeps the track readable over the
+                // pale streets of the light basemaps without dulling the hue.
+                trackCasing = L.polyline(coords, {
+                    ...trackStyle,
+                    color: TRACK_CASING, weight: 8, opacity: 0.45,
+                    interactive: false,
+                }).addTo(map);
+
+                trackPolyline = L.polyline(coords, {
+                    ...trackStyle,
+                    color: TRACK, weight: 4, opacity: 0.95,
                 }).addTo(map);
 
                 pointMarkersLayer = L.layerGroup(data.flatMap(p => {
@@ -717,10 +747,10 @@
                     const dot = L.circleMarker([p.latitude, p.longitude], {
                         renderer: pointCanvasRenderer,
                         radius: 5,
-                        color: '#ffd8a8',
+                        color: TRACK_EDGE,
                         weight: 1,
-                        fillColor: '#ff7f00',
-                        fillOpacity: 0.75,
+                        fillColor: TRACK_LIGHT,
+                        fillOpacity: 0.9,
                         interactive: false,
                     });
 
@@ -734,12 +764,12 @@
                 const pulseIcon = L.divIcon({
                     className: '',
                     html: `
-                        <div style="width:18px;height:18px;background:#ff7f00;border:3px solid #ffb347;
-                            border-radius:50%;box-shadow:0 0 12px rgba(255,127,0,0.6),0 0 24px rgba(255,127,0,0.3);
+                        <div style="width:18px;height:18px;background:${TRACK};border:3px solid #eafff9;
+                            border-radius:50%;box-shadow:0 0 0 1px ${TRACK_EDGE},0 0 12px rgba(0,209,193,0.6),0 0 24px rgba(0,209,193,0.3);
                             animation:pulse 2s ease-in-out infinite;"></div>
                         <style>@keyframes pulse{
-                            0%,100%{box-shadow:0 0 12px rgba(255,127,0,0.6);transform:scale(1)}
-                            50%{box-shadow:0 0 24px rgba(255,127,0,0.8);transform:scale(1.15)}
+                            0%,100%{box-shadow:0 0 0 1px ${TRACK_EDGE},0 0 12px rgba(0,209,193,0.6);transform:scale(1)}
+                            50%{box-shadow:0 0 0 1px ${TRACK_EDGE},0 0 24px rgba(0,209,193,0.85);transform:scale(1.15)}
                         }</style>`,
                     iconSize: [18, 18], iconAnchor: [9, 9],
                 });
